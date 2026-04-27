@@ -1,6 +1,7 @@
 ; -----------------------------------------------------------------------
 ; Port 68000 to x86_64
 ; -----------------------------------------------------------------------
+
 section .data
     prompt  db "Enter number: ", 0   ; Define prompt string, null-terminated
     newline db 10, 0                 ; Define newline character, null-terminated
@@ -9,27 +10,37 @@ section .text
     global _start                     ; Export _start as entry point
 
 _start:
-    mov rdi, prompt                   ; Load address of prompt into RDI (first argument)
-    call print_string                 ; Call print_string routine to print prompt
+    mov rcx, 3                        ; Loop counter (run 3 times)
 
-    mov rdi, newline                  ; Load address of newline into RDI
-    call print_string                 ; Call print_string routine to print newline
+.loop_start:
+    mov rdi, prompt                  ; Load prompt string address
+    call print_string                ; Print prompt
 
-    mov rax, 60                       ; Syscall number for exit (sys_exit)
-    mov rdi, 0                        ; Exit code 0
-    syscall                           ; Invoke syscall to exit program
+    mov rdi, newline                 ; Load newline string address
+    call print_string                ; Print newline
 
-; --- Minimal print routine ---
+    dec rcx                          ; Decrement loop counter
+    jnz .loop_start                  ; Repeat until zero
+
+    mov rax, 60                      ; syscall: exit
+    mov rdi, 0                       ; exit code 0
+    syscall
+
+; -----------------------------------------------------------------------
+; Print String Function
+; -----------------------------------------------------------------------
 print_string:
-    mov rsi, rdi                      ; Copy string pointer from RDI to RSI
-    xor rdx, rdx                      ; Clear RDX to use as string length counter
+    mov rsi, rdi                     ; Copy string pointer to RSI
+    xor rdx, rdx                     ; Clear length counter
+
 .len_loop:
-    cmp byte [rsi+rdx], 0             ; Compare current byte to null terminator
-    je .do_print                       ; If null terminator, jump to printing
-    inc rdx                            ; Otherwise, increment counter
-    jmp .len_loop                      ; Repeat loop for next byte
+    cmp byte [rsi + rdx], 0         ; Check for null terminator
+    je .do_print                     ; If found, print string
+    inc rdx                          ; Increase length
+    jmp .len_loop                    ; Continue scanning
+
 .do_print:
-    mov rax, 1                         ; Syscall number for write (sys_write)
-    mov rdi, 1                         ; File descriptor 1 (stdout)
-    syscall                            ; Invoke syscall to write string
-    ret                                ; Return from print_string routine
+    mov rax, 1                      ; sys_write
+    mov rdi, 1                      ; stdout
+    syscall
+    ret
