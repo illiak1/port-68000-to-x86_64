@@ -1,0 +1,53 @@
+# ----------------------------------------------------------------------
+# Project: x86_64 Assembly + C Interoperability Test
+# File: Makefile
+# Author: Illia Karban
+# Description:
+#   Build system for a hybrid project combining:
+#     - NASM assembly module (adder function)
+#     - C test harness (driver program)
+#
+#   Follows standard Linux x86_64 calling convention
+#
+# Targets:
+#   all   - Compile and link full program
+#   run   - Execute program
+#   clean - Remove build artifacts
+# ----------------------------------------------------------------------
+
+# Compiler and assembler
+ASM = nasm
+ASMFLAGS = -f elf64
+CC = gcc
+
+# Files
+ASM_FILE = asm_adder_only.asm
+ASM_OBJ = asm_adder_only.o
+C_FILE = test_logic.c
+C_OBJ = test_logic.o
+EXEC = test_logic
+
+# Default target
+all: $(EXEC)
+
+# Assemble the assembly code
+$(ASM_OBJ): $(ASM_FILE)
+	$(ASM) $(ASMFLAGS) -o $@ $<
+
+# Compile the C test harness
+$(C_OBJ): $(C_FILE)
+	$(CC) -c -o $@ $<
+
+# Link C and assembly objects
+$(EXEC): $(C_OBJ) $(ASM_OBJ)
+	$(CC) -o $@ $^
+
+# Run the program
+run: $(EXEC)
+	./$(EXEC)
+
+# Clean generated files
+clean:
+	rm -f $(ASM_OBJ) $(C_OBJ) $(EXEC)
+
+.PHONY: all run clean
