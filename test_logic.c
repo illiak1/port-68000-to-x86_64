@@ -1,59 +1,41 @@
-#include <stdio.h>    // For printf
-#include <stdint.h>   // For int64_t
-#include <inttypes.h> // For portable format specifiers (PRId64)
+#include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h>
 
-// Declaration of the external assembly function.
-// It takes two 64-bit integers and returns their sum.
 extern int64_t asm_register_adder(int64_t a, int64_t b);
 
+typedef struct {
+    int64_t a;
+    int64_t b;
+    int64_t expected;
+} TestCase;
+
 int main() {
-    // Variables to store input values and the result
-    int64_t val1, val2, result;
+    // Array-based testing for scalability
+    TestCase tests[] = {
+        {100, 250, 350},
+        {123456789012345, 987654321098765, 1111111110111110},
+        {0, 42, 42},
+        {-50, 20, -30},                     // Negative test
+        {9223372036854775807, 1, -9223372036854775808ULL} // Overflow test (wraps)
+    };
 
-    // Print a header for clarity
-    printf("=== Assembly Register Adder Test ===\n");
+    uint32_t num_tests = sizeof(tests) / sizeof(tests[0]);
+    uint32_t passed = 0;
 
-    // -----------------------------------
-    // Test 1: Simple addition
-    // -----------------------------------
-    val1 = 100;
-    val2 = 250;
+    printf("=== Assembly Register Adder: Running %u Tests ===\n", num_tests);
 
-    // Call the assembly function
-    result = asm_register_adder(val1, val2);
+    for (uint32_t i = 0; i < num_tests; i++) {
+        int64_t res = asm_register_adder(tests[i].a, tests[i].b);
+        int success = (res == tests[i].expected);
+        
+        printf("Test %u: %" PRId64 " + %" PRId64 " = %" PRId64 " [%s]\n",
+               i + 1, tests[i].a, tests[i].b, res, success ? "PASS" : "FAIL");
+        
+        if (success) passed++;
+    }
 
-    // Print result using portable 64-bit format specifier
-    // Expected result: 350
-    printf("Test 1: %" PRId64 " + %" PRId64 " = %" PRId64 " -> %s\n",
-           val1, val2, result,
-           (result == 350) ? "PASS" : "FAIL");
-
-    // -----------------------------------
-    // Test 2: Large number addition
-    // -----------------------------------
-    val1 = 123456789012345;
-    val2 = 987654321098765;
-
-    result = asm_register_adder(val1, val2);
-
-    // Expected result: 1111111110111110
-    printf("Test 2: %" PRId64 " + %" PRId64 " = %" PRId64 " -> %s\n",
-           val1, val2, result,
-           (result == 1111111110111110) ? "PASS" : "FAIL");
-
-    // -----------------------------------
-    // Test 3: Adding zero
-    // -----------------------------------
-    val1 = 0;
-    val2 = 42;
-
-    result = asm_register_adder(val1, val2);
-
-    // Expected result: 42
-    printf("Test 3: %" PRId64 " + %" PRId64 " = %" PRId64 " -> %s\n",
-           val1, val2, result,
-           (result == 42) ? "PASS" : "FAIL");
-
-    // Return 0 to indicate successful execution
-    return 0;
+    printf("--- Summary: %u/%u passed ---\n", passed, num_tests);
+    
+    return (passed == num_tests) ? 0 : 1;
 }
